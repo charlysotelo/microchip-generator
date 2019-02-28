@@ -5,7 +5,7 @@ def _heuristic_cost1(state):
     return 0
 
 def _heuristic_cost2(state):
-    return state.state.max_floor_number - state.state.elevator_level
+    return state.state.num_floors - 1 - state.state.elevator_level
 
 def _heuristic_cost3(state):
     # Clearly if there are 4 items in a floor, it will take at least
@@ -14,7 +14,7 @@ def _heuristic_cost3(state):
     floor_number = 1
     total = 0
     for (generator_list, microchip_list) in state.state.floors_list:
-        round_trip_length = 2 * (state.state.max_floor_number - floor_number)
+        round_trip_length = 2 * (state.state.num_floors - 1 - floor_number)
         number_of_items = len(generator_list) + len(microchip_list)
         tt = round_trip_length * math.ceil(number_of_items / 2)
         tt = tt - round_trip_length / 2
@@ -33,8 +33,22 @@ class AstarStateWrapper:
         self.state = state
         self.depth = depth
 
+    # WARNING: Playing a dangerous game here saying that two things can be equal and
+    # also one less than the other!:
+
+    # Less than is implemented puerly for heap functions.
     def __lt__(self, other):
         return _estimated_total_cost(self) < _estimated_total_cost(other)
+   
+    # The following 3 are used purely for set operations
+    def __eq__(self, other):
+        return self.state == other.state
+    
+    def __ne__(self, other):
+        return not (self.state == other.state)
+ 
+    def __hash__(self):
+        return hash(self.state)
 
     def is_goal(self):
         return self.state.is_goal()
@@ -53,7 +67,7 @@ class SearcherAstar:
             return 0
         
         open_set = []
-        closed_set = [] # Warning, only store non-wrapped states here
+        closed_set = set() 
         heapq.heappush(open_set,
                        AstarStateWrapper(self.initial_state))
         current_depth = 0
@@ -66,15 +80,15 @@ class SearcherAstar:
                 current_depth = current_node.depth
                 print('Depth is {}'.format(current_depth))
 
+            if current_node in closed_set:
+                continue    
+
             if current_node.is_goal():
                 return current_node.depth
 
             generated_actions = current_node.generate_possible_actions()
             for generated_action in generated_actions:
-                if generated_action.state in closed_set:
+                if generated_action in closed_set:
                     continue
-                if not (generated_action in open_set):
-                    heapq.heappush(open_set, generated_action)
-                else: #TODO modify prioirty here?
-                    pass 
-            closed_set.append(current_node.state)
+                heapq.heappush(open_set, generated_action)
+            closed_set.add(current_node)

@@ -9,7 +9,7 @@ class TestSearcherBFS(unittest.TestCase):
         self.assertEqual(SearcherBFS(state).search(), 1)
     def test_search2(self):
         state = State([([],[]), (["hydrogen"],["hydrogen"])])
-        state.elevator_level = state.max_floor_number
+        state.elevator_level = state.num_floors - 1
         self.assertEqual(SearcherBFS(state).search(), 0)
     def test_search3(self):
         state = State([([],["lithium", "helium", "hydrogen"]), (["hydrogen", "helium", "lithium"],[])])

@@ -13,6 +13,9 @@ class BFSStateWrapper:
     def __eq__(self, other):
         return self.state == other.state
 
+    def __hash__(self):
+        return hash(self.state)
+
 class SearcherBFS:
     def __init__(self, initial_state, max_depth=1000):
         self.initial_state = BFSStateWrapper(initial_state)
@@ -25,7 +28,7 @@ class SearcherBFS:
         self.initial_state.depth = 0
         current_depth = 0
         open_set = [self.initial_state]
-        closed_set = [] # Possibly hcange this to a dictionary and implement __hash_
+        closed_set = set() # Possibly hcange this to a dictionary and implement __hash_
 
         while len(open_set) > 0:
             current_node = open_set.pop(0)
@@ -44,4 +47,4 @@ class SearcherBFS:
                     continue
                 if not (generated_action in open_set):
                     open_set.append(generated_action)
-            closed_set.append(current_node)
+            closed_set.add(current_node)

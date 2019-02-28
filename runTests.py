@@ -11,8 +11,8 @@ test_classes = [
     TestParser,
     TestState,
     TestSearcherBFS,
-    TestSearcherAstar]
-
+    TestSearcherAstar,
+]
 suite_collection = []
 for test_class in test_classes:
     suite = unittest.TestLoader().loadTestsFromTestCase(test_class)

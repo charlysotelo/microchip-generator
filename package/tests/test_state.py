@@ -19,5 +19,5 @@ class TestState(unittest.TestCase):
     
     def test_is_goal2(self):
         state = State([([],[]), (["2"],["2"])])
-        state.elevator_level = state.max_floor_number
+        state.elevator_level = state.num_floors - 1
         self.assertTrue(state.is_goal())
