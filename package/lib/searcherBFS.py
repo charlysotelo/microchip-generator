@@ -42,5 +42,6 @@ class SearcherBFS:
                     return generated_action.depth
                 if generated_action in closed_set:
                     continue
-                open_set.append(generated_action)
+                if not (generated_action in open_set):
+                    open_set.append(generated_action)
             closed_set.append(current_node)

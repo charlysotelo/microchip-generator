@@ -1,4 +1,5 @@
 import copy
+import bisect
 
 class State:
     def __init__(self, raw_floor_list=[]):
@@ -27,36 +28,82 @@ class State:
         if can_go_down:
             directions.append(-1)
        
-        # Change list format to [(item_number, item_type), ...] 
         (generator_list, microchip_list) = self.floors_list[self.elevator_level - 1]
-        floor_contents = [(generator, 0) for generator in generator_list]
-        floor_contents += [(microchip, 1) for microchip in microchip_list]
         for direction in directions:
             target_floor = self.elevator_level + direction
-
-            # For every possible combination of choosing 1 item
-            for i in range(len(floor_contents)):
-                item_number = floor_contents[i][0]
-                item_type = floor_contents[i][1]
+            (target_gen_list, target_mic_list) = self.floors_list[target_floor - 1]
+            trgt_unpaired_mics = [m for m in target_mic_list if not (m in target_gen_list)]
+            # Generate next states where we move a microchip
+            for i in range(len(microchip_list)):
                 one_item_move_state = copy.deepcopy(self)
-                one_item_move_state._move_item(item_number, item_type,
+                one_item_move_state._move_item(microchip_list[i], 1,
                              self.elevator_level, target_floor)
                 one_item_move_state.elevator_level = target_floor
 
-                if one_item_move_state.is_valid():
+                # Generate the next state for moving a single microchip only if
+                # does not make the state invalid
+                if ((len(target_gen_list) == 0) or
+                    microchip_list[i] in target_gen_list):
                     possible_actions.append(one_item_move_state)
                 
-                # For every possible combination of choosing 2 items
-                for j in range(i + 1, len(floor_contents)):
-                    item_number = floor_contents[j][0]
-                    item_type = floor_contents[j][1]
-                    two_item_move_state = copy.deepcopy(one_item_move_state)
-                    two_item_move_state._move_item(item_number, item_type,
-                                    self.elevator_level, target_floor)
+                    # Generate the next state where we move two microchips. Notice
+                    # this is only possible if we succeeded in generateing a state
+                    # with only the first microchip moved 
+                    for j in range(i + 1, len(microchip_list)):
+
+                        # Generate state only if moving second chip does not make
+                        # the state invalid
+                        if ((not (microchip_list[j] in target_gen_list)) and
+                            len(target_gen_list) > 0):
+                            continue
                     
-                    if two_item_move_state.is_valid():
+                        two_item_move_state = copy.deepcopy(one_item_move_state)
+                        two_item_move_state._move_item(microchip_list[j], 1,
+                                     self.elevator_level, target_floor)
                         possible_actions.append(two_item_move_state)
-        return possible_actions        
+                else:
+                    # cannot match a microchip with anything but a compatible genny
+                    if microchip_list[i] in generator_list:
+                        two_item_move_state = copy.deepcopy(one_item_move_state)
+                        two_item_move_state._move_item(microchip_list[i], 0,
+                                     self.elevator_level, target_floor)
+                        possible_actions.append(two_item_move_state)
+
+            if len(trgt_unpaired_mics) <= 2:
+                if len(trgt_unpaired_mics) == 0:
+                    for i in range(len(generator_list)):
+                        one_item_move_state = copy.deepcopy(self)
+                        one_item_move_state._move_item(generator_list[i], 0,
+                                     self.elevator_level, target_floor)
+                        one_item_move_state.elevator_level = target_floor
+                        possible_actions.append(one_item_move_state)
+
+                        for j in range(i + 1, len(generator_list)):
+                            two_item_move_state = copy.deepcopy(one_item_move_state)
+                            two_item_move_state._move_item(generator_list[j], 0,
+                                        self.elevator_level, target_floor)
+                            possible_actions.append(two_item_move_state)
+                elif len(trgt_unpaired_mics) <= 2: # Cant be 0 at this point
+                    if trgt_unpaired_mics[0] in generator_list:
+                        one_item_move_state = copy.deepcopy(self)
+                        one_item_move_state._move_item(trgt_unpaired_mics[0], 0,
+                                        self.elevator_level, target_floor)
+                        one_item_move_state.elevator_level = target_floor
+                        
+                        if len(trgt_unpaired_mics) == 1:
+                            possible_actions.append(one_item_move_state)
+                            other_gens = [x for x in generator_list if x != trgt_unpaired_mics[0]]
+                            for other_gen in other_gens:
+                                two_item_move_state = copy.deepcopy(one_item_move_state)
+                                two_item_move_state._move_item(other_gen, 0,
+                                            self.elevator_level, target_floor)
+                                possible_actions.append(two_item_move_state)
+                        elif trgt_unpaired_mics[1] in generator_list: # 2 unpaired microchips
+                            two_item_move_state = copy.deepcopy(one_item_move_state)
+                            two_item_move_state._move_item(trgt_unpaired_mics[1], 0,
+                                            self.elevator_level, target_floor)
+                            possible_actions.append(two_item_move_state)
+        return possible_actions #TODO: prune already seen states and isomorphic states       
 
     def is_valid(self):
         # WARNING:
@@ -89,7 +136,7 @@ class State:
 
     def _move_item(self, item_number, item_type, src_floor, target_floor):
         self.floors_list[src_floor - 1][item_type].remove(item_number)
-        self.floors_list[target_floor - 1][item_type].append(item_number)
+        bisect.insort(self.floors_list[target_floor - 1][item_type], item_number)
 
     def __deepcopy__(self, memo):
         new_state = State()

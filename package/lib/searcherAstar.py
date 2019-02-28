@@ -73,6 +73,8 @@ class SearcherAstar:
             for generated_action in generated_actions:
                 if generated_action.state in closed_set:
                     continue
-                heapq.heappush(open_set, generated_action)
-
+                if not (generated_action in open_set):
+                    heapq.heappush(open_set, generated_action)
+                else: #TODO modify prioirty here?
+                    pass 
             closed_set.append(current_node.state)
