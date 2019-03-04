@@ -29,7 +29,14 @@ class State:
     def generate_possible_actions(self):
         # Generate all possibilities:
         possible_actions = []
-        
+
+        # Code is a little verbose to prevent generating unnecessary states.
+        # There are only 4 types of possible next states to generate, sans up/down: 
+        # M, G, MM, GG, GM (microchip, generator, microchip-microchip, etc...)
+        # each case has restriction conditions.
+        # M can only move to a floor with no conflicting gennys or a matching geny
+        # G can only move to a floor with no non-matched chips, unless G matches M
+        # etc...      
         directions = [x for x in [UP, DOWN] if self._can_move_in_direction(x)]
         (generator_list, microchip_list) = self.floors_list[self.elevator_level]
         for direction in directions:
