@@ -44,13 +44,13 @@ class State:
                 one_item_move_state.elevator_level = dst_floor
 
                 # Generate the next state for moving a single microchip only if
-                # does not make the state invalid
+                # it does not make the state invalid
                 if ((len(dst_gen_list) == 0) or
                     microchip_list[i] == dst_floor):
                     possible_actions.append(one_item_move_state)
                 
                     # Generate the next state where we move two microchips. Notice
-                    # this is only possible if we succeeded in generateing a state
+                    # this is only possible if we succeeded in generating a state
                     # with only the first microchip moved 
                     for j in range(i + 1, len(microchip_list)):
 
@@ -143,6 +143,7 @@ class State:
         self.floors_list = list2tuple(floors_list)        
 
     def _anonymize_items(self, raw_floor_list):
+        # Make every item point to the floor of its matching item
         chips_per_floor = [microchips for (generators, microchips) in raw_floor_list]
         genys_per_floor = [generators for (generators, microchips) in raw_floor_list]
         for chip_floor_index in range(self.num_floors):
