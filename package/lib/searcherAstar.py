@@ -10,7 +10,7 @@ def _heuristic_cost2(state):
 def _heuristic_cost3(state):
     # Clearly if there are 4 items in a floor, it will take at least
     # 1.5 Roundtrips, since we can fit at most 2 items in the elevator
-    # If there are 6 items, it will take N/2 * 1 RTT  - 0.5 RTT if there were 4 
+    # If there are N items, it will take N/2 * 1 RTT  - 0.5 RTT 
     floor_number = 1
     total = 0
     for (generator_list, microchip_list) in state.state.floors_list:
@@ -18,7 +18,6 @@ def _heuristic_cost3(state):
         number_of_items = len(generator_list) + len(microchip_list)
         tt = round_trip_length * math.ceil(number_of_items / 2)
         tt = tt - round_trip_length / 2
-        #tt = tt + abs(floor_number - state.state.elevator_level)
         total += tt
         floor_number += 1
     return total 

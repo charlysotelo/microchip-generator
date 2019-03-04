@@ -28,7 +28,7 @@ class SearcherBFS:
         self.initial_state.depth = 0
         current_depth = 0
         open_set = [self.initial_state]
-        closed_set = set() # Possibly hcange this to a dictionary and implement __hash_
+        closed_set = set()
 
         while len(open_set) > 0:
             current_node = open_set.pop(0)

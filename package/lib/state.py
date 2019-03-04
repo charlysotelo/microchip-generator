@@ -3,44 +3,50 @@ import bisect
 
 GENY = 0
 CHIP = 1
+
+UP = 1
+DOWN = -1
+
 class State:
     def __init__(self, raw_floor_list=[]):
+        # Format of floors_list: 
+        # (floor1, floor2, ....)
+        # floori = (gens, chips)
+        # gens = (gen1, gen2, ...)
+        # chips = (chip1, chip2, ...)
+        # gen/chip = floor number of matching chip/gen 
         self.floors_list = None
         self.elevator_level = 0
         self.num_floors = len(raw_floor_list)
         self._anonymize_items(raw_floor_list)
 
+    def _can_move_in_direction(self, direction):
+        if direction == UP:
+            return self.elevator_level < self.num_floors - 1
+        elif direction == DOWN:
+            return self.elevator_level > 0
+
     def generate_possible_actions(self):
         # Generate all possibilities:
         possible_actions = []
         
-        # Possible Directions: up and down
-        # Note this only checks floor bounds
-        directions = []
-        can_go_up = self.elevator_level < self.num_floors - 1
-        can_go_down = self.elevator_level > 0 
-
-        if can_go_up:
-            directions.append(1)
-        if can_go_down:
-            directions.append(-1)
-       
+        directions = [x for x in [UP, DOWN] if self._can_move_in_direction(x)]
         (generator_list, microchip_list) = self.floors_list[self.elevator_level]
         for direction in directions:
-            target_floor = self.elevator_level + direction
-            (target_gen_list, target_mic_list) = self.floors_list[target_floor]
-            trgt_unpaired_mics = [m for m in target_mic_list if m != target_floor]
+            dst_floor = self.elevator_level + direction
+            (dst_gen_list, dst_mic_list) = self.floors_list[dst_floor]
+            dst_unpaired_mics = [m for m in dst_mic_list if m != dst_floor]
             # Generate next states where we move a microchip
             for i in range(len(microchip_list)):
                 one_item_move_state = copy.copy(self)
                 one_item_move_state._move_item(microchip_list[i], CHIP,
-                             self.elevator_level, target_floor)
-                one_item_move_state.elevator_level = target_floor
+                             self.elevator_level, dst_floor)
+                one_item_move_state.elevator_level = dst_floor
 
                 # Generate the next state for moving a single microchip only if
                 # does not make the state invalid
-                if ((len(target_gen_list) == 0) or
-                    microchip_list[i] == target_floor):
+                if ((len(dst_gen_list) == 0) or
+                    microchip_list[i] == dst_floor):
                     possible_actions.append(one_item_move_state)
                 
                     # Generate the next state where we move two microchips. Notice
@@ -50,55 +56,55 @@ class State:
 
                         # Generate state only if moving second chip does not make
                         # the state invalid
-                        if ((microchip_list[j] != target_floor) and
-                            (len(target_gen_list) > 0)):
+                        if ((microchip_list[j] != dst_floor) and
+                            (len(dst_gen_list) > 0)):
                             continue
                     
                         two_item_move_state = copy.copy(one_item_move_state)
                         two_item_move_state._move_item(microchip_list[j], CHIP,
-                                     self.elevator_level, target_floor)
+                                     self.elevator_level, dst_floor)
                         possible_actions.append(two_item_move_state)
                 else:
                     # cannot match a microchip with anything but a compatible genny
                     if microchip_list[i] == self.elevator_level:
                         two_item_move_state = copy.copy(one_item_move_state)
-                        two_item_move_state._move_item(target_floor, GENY,
-                                     self.elevator_level, target_floor)
+                        two_item_move_state._move_item(dst_floor, GENY,
+                                     self.elevator_level, dst_floor)
                         possible_actions.append(two_item_move_state)
 
-            if len(trgt_unpaired_mics) <= 2:
-                if len(trgt_unpaired_mics) == 0:
+            if len(dst_unpaired_mics) <= 2:
+                if len(dst_unpaired_mics) == 0:
                     for i in range(len(generator_list)):
                         one_item_move_state = copy.copy(self)
                         one_item_move_state._move_item(generator_list[i], GENY,
-                                     self.elevator_level, target_floor)
-                        one_item_move_state.elevator_level = target_floor
+                                     self.elevator_level, dst_floor)
+                        one_item_move_state.elevator_level = dst_floor
                         possible_actions.append(one_item_move_state)
 
                         for j in range(i + 1, len(generator_list)):
                             two_item_move_state = copy.copy(one_item_move_state)
                             two_item_move_state._move_item(generator_list[j], GENY,
-                                        self.elevator_level, target_floor)
+                                        self.elevator_level, dst_floor)
                             possible_actions.append(two_item_move_state)
-                elif len(trgt_unpaired_mics) <= 2: # Cant be 0 at this point
-                    if trgt_unpaired_mics[0] == self.elevator_level:
+                elif len(dst_unpaired_mics) <= 2: # Cant be 0 at this point
+                    if dst_unpaired_mics[0] == self.elevator_level:
                         one_item_move_state = copy.copy(self)
-                        one_item_move_state._move_item(target_floor, GENY,
-                                        self.elevator_level, target_floor)
-                        one_item_move_state.elevator_level = target_floor
+                        one_item_move_state._move_item(dst_floor, GENY,
+                                        self.elevator_level, dst_floor)
+                        one_item_move_state.elevator_level = dst_floor
                         
-                        if len(trgt_unpaired_mics) == 1:
+                        if len(dst_unpaired_mics) == 1:
                             possible_actions.append(one_item_move_state)
-                            other_gens = [x for x in generator_list if x != target_floor]
+                            other_gens = [x for x in generator_list if x != dst_floor]
                             for other_gen in other_gens:
                                 two_item_move_state = copy.copy(one_item_move_state)
                                 two_item_move_state._move_item(other_gen, GENY,
-                                            self.elevator_level, target_floor)
+                                            self.elevator_level, dst_floor)
                                 possible_actions.append(two_item_move_state)
-                        elif trgt_unpaired_mics[1] == self.elevator_level: # 2 unpaired microchips
+                        elif dst_unpaired_mics[1] == self.elevator_level: # 2 unpaired microchips
                             two_item_move_state = copy.copy(one_item_move_state)
-                            two_item_move_state._move_item(target_floor, GENY,
-                                            self.elevator_level, target_floor)
+                            two_item_move_state._move_item(dst_floor, GENY,
+                                            self.elevator_level, dst_floor)
                             possible_actions.append(two_item_move_state)
         return possible_actions
       
